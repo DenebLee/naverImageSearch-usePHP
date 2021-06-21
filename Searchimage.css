@@ -1,0 +1,45 @@
+img {
+  max-width: 45%;
+  max-height:45%;
+}
+
+.thumbnailClass {
+  margin-right: 10px;
+  margin-bottom: 10px;
+  max-width: 100%;
+  height: auto;
+  text-align: center;
+}
+/* 사용안함 */
+/* .detailClass {
+  float: left;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  background-color: #444444;
+  padding: 10px;
+  width: 100%;
+} */
+
+.image_resultClass {
+  margin-left: 50px;
+  width: 80%;
+  min-height: 250px;
+  margin-top: 10px;
+  margin-left: 50px;
+  padding: 6px;
+  padding: 6px;
+  padding-right: 75px;
+}
+
+.where {
+  display: block;
+  margin: 25px 15px;
+  font-size: 11px;
+  color: #000;
+  text-decoration: none;
+  font-family: verdana;
+  font-style: italic;
+}
+.image_information {
+  text-align: center;
+}

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<?
+	$AUTH_MENU_GRP__ = 0;
+	$AUTH_MENU_TOP__ = 0;
+	$AUTH_MENU_SUB__ = 0;
+	$MENU__ = 0;
+
+	include $_SERVER["DOCUMENT_ROOT"]. "/h.htm";
+
+	
+	$_width = 800;
+	TO_LIST__($_width, "", "네이버이미지 검색 <a href=\"javascript:$('#MOD_POPUP_WIN',parent.document).hide();\">[닫기]</a>"); 
+	
+?>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <title>이미지 검색</title>
+    <link rel='stylesheet' type='text/css' href='./Searchimage.css' />
+</head>
+
+									<!--검색 인풋창 css 설정 -->
+<style>
+    .outBox .inputBox {
+        position: relative;
+        height: 50px;
+        margin: 50px auto;
+        max-width: 320px;
+    }
+
+    .outBox .inputBox input[type="text"] {
+        padding: 0 10px;
+        width: 80%;
+        float: left;
+        height: 50px;
+        font-size: 14px;
+        box-sizing: border-box;
+        border: 3px solid #09CE20;
+        outline: none;
+    }
+
+    .outBox .inputBox input[type="button"] {
+        padding: 0 10px;
+        width: 20%;
+        height: 50px;
+        font-size: 14px;
+        box-sizing: border-box;
+        border: 1px solid #09CE20;
+        outline: none;
+        background-color: #09CE20;
+        background-image: url(test.png);
+        background-position: 10px center;
+        background-repeat: no-repeat;
+    }
+
+    .outBox .inputBox label {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        padding: 0 6px;
+        color: #09CE20;
+        font-size: 14px;
+        font-weight: normal;
+        background: #fff;
+        transform: scale(1) translate(4px, -18px);
+        transition: all .15s;
+        pointer-events: none;
+    }
+    .outBox .inputBox input[type="text"]:focus,
+    .outBox.existence .inputBox input[type="text"] {
+        border: 2px solid #09CE20;
+    }
+
+    .outBox .inputBox input[type="text"]:focus+label,
+    .outBox.existence .inputBox label {
+        color: #09CE20;
+        transform: scale(.85) translate(-10px, -48px);
+    }		
+</style>
+
+												<!--검색 인풋창 css 설정 -->
+
+<body>
+    <div>
+	<fieldset>
+	<a style="margin-left:30px;font-weight:bold;">※ 최대 100개까지 검색됩니다</a>
+	</fieldset>
+        <div style="width:100%; margin-top:40px; text-align:center">
+            <div class="outBox">
+                <div class="inputBox">
+                    <input type="text" name="txt_serach" onkeyup="enterkey();" id="txt_search" value="">
+					<!-- 검색시 엔터키 활성화  -->
+                    <input type="button" onclick="javascript:goSearch();"> <!-- 클릭시 goSearch()검색엔진 함수 실행 --> 
+                    <label for="txt_search">네이버 이미지 검색하기</label>
+                </div>
+            </div>
+        </div>
+        <div id="image_result" class="image_resultClass">
+        </div>
+    </div>
+</body>
+<script>
+
+											    //검색 인풋창 end+++++++++++++++++++++++++++
+	
+
+    // 인풋박스 js
+    var Box = document.querySelector('.outBox');
+    var InputBox = document.querySelector('#txt_search');
+    InputBox.addEventListener('keyup', function() {
+        if (!InputBox.value == '') {
+            Box.classList.add('existence');
+        } else {
+            Box.classList.remove('existence');
+        }
+    });
+	// 인풋박스 js
+
+    function goSearch() { //이미지 클릭이벤트
+        let SEAR_VALUE = $("#txt_search").val(); //네이버api 이미지검색결과 
+        if (!SEAR_VALUE) {
+            alert("검색어를 입력해주세요");
+            return false;
+        } else {
+            $.ajax({
+                    type: 'POST',
+                    dataType: 'json',
+                    url: "./getNaverApi.php",
+                    data: {
+                        'encText': SEAR_VALUE
+                    },
+                    cache: false,
+                    async: false
+                })
+                .done(function(result) {
+                    //정상 실행된 경우
+                    var image_result = "";
+                    for (var i = 0; i < result.items.length; i++) {
+
+                        //result.items[i].title : 이미지제목
+                        //result.items[i].link : 원본 이미지
+                        //result.items[i].thumbnail : 썸네일 이미지 
+						//result.items[i].detailClass : 클릭시 원본사진 형성  <-- 기능추가 안할예정으로 적어만 놓음
+
+                        image_result += "<span class='thumbnailClass' thumbnail='" + result.items[i].link + "' onclick=\"javascript:viewImgOrg($(this));\"><img src='" + result.items[i].thumbnail + "'></span>";
+						
+                    }
+                    $("#image_result").html(image_result);
+                });
+        }
+    }//end of goSearch()
+
+
+    var nowSelectedImg = null; // 현재 선택된 이미지의 span 객체
+
+    function viewImgOrg(thisObj) { //이미지 클릭이벤트
+		var img_url = thisObj.attr('thumbnail'); //img_url에 선택한 이미지 url넣기
+		img_url.replace('http:', 'https:');
+		console.log(img_url);
+	   // confirm 버튼 클릭시 모달창 뛰운 부모창으로 이동 
+	   // 이동시 선택한 이미지 #pdt_img_priveiw div에 출력
+
+
+       
+		
+		$('input[id=image_url]', parent.document).val(img_url);
+		$('#imgdb_private_select_area',parent.document).hide(); //이미지 선택시 imgdb_private_select_area숨기기
+        $("#imgdb_private_select_area2",parent.document).show();//이미지를 선택할시 imgdb_img_preivew_layer 보이기
+		$('#test',parent.document).html("<img src='"+ img_url +"' style='height:300px;width:680px;'>");
+		$('#image_url',parent.document).hide();
+		
+		javascript:$('#MOD_POPUP_WIN',parent.document).hide();
+		
+    
+	
+	console.log(img_url);
+    
+	}//end of viewImgOrg()
+
+    function enterkey() {//Input 텍스트창에 키워드 적고 엔터눌러도 검색되게 구현
+        if (window.event.keyCode == 13) {
+            goSearch();
+        }
+    } //end of enterkey
+  
+</script>
+
+
+</html>
+
+<?
+	include $_SERVER["DOCUMENT_ROOT"]. "/f.htm";
+?>

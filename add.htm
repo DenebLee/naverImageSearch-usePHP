@@ -1,0 +1,665 @@
+<?
+	$AUTH_MENU_GRP__ = 2;
+	$AUTH_MENU_TOP__ = 2;
+	$AUTH_MENU_SUB__ = 5;
+	$MENU__ = 1;
+
+	// 스마트 에디터 파라메터 정의
+	$SMARTED2__ = 1;
+	$SMARTED2_TEXTAREA_ID__ = "detail";
+
+	include $_SERVER["DOCUMENT_ROOT"]. "/h.htm";
+
+	$_width = 700;
+	TO_LIST__($_width, "", "상품 등록");
+?>
+
+	<script language='JavaScript'>
+//<![CDATA[
+
+		function CK(){
+
+			if( !FORM_V_CK('name', '상품명을 입력하세요') ){ return false; }
+
+//			if( !FORM_V_CK('bcode', '바코드를 입력하세요') ){ return false; }
+//			if( pdt_bcode_over_ck() == 0 ){ return false; }
+//			if( !$('#bcode_ck').val() ){			alert('바코드를 다시한번 체크하세요.');		$('#bcode').focus();		return false; }
+
+			if( !FORM_V_CK('cate', '대분류를 선택하세요.') ){ return false; }
+			if( !FORM_V_CK('cate_sub', '소분류를 선택하세요') ){ return false; }
+
+			if( $('#bcode').val() ){
+
+				if( pdt_bcode_over_ck() == 0 ){ return false; }
+				if( !$('#bcode_ck').val() ){			alert('바코드를 다시한번 체크하세요.');		$('#bcode').focus();		return false; }
+
+			}
+
+			// 개인이미지 파일 사용인경우 이미지파일체크
+			if( $('#imgdb_global_num').val() == 0 ){
+
+				if( typeof $('#pdt_img_id').attr('src') != 'undefined' ){
+					if( !$('#pdt_img_id').attr('src') ){ alert('상품이미지 파일을 입력하세요');	return false;	}
+				}else{
+					alert('상품이미지 파일을 입력하세요');	return false;
+				}
+
+			}// 개인이미지 파일 사용인경우 이미지파일체크
+
+			// se에디터의 내용이 textarea에 적용
+			oEditors.getById["<?=$SMARTED2_TEXTAREA_ID__;?>"].exec("UPDATE_CONTENTS_FIELD", []);
+			if( !FORM_V_CK('stock_cnt', '재고수를 입력하세요') ){ return false; }
+			if( !NUM_COMM_CK($('#stock_cnt').val()) ){	alert('재고수에는 숫자만 입력하세요');		$('#stock_cnt').focus();		return false; }
+
+			if( !FORM_V_CK('price', '판매가를 입력하세요') ){ return false; }
+			if( !NUM_COMM_CK($('#price').val()) ){	alert('판매가는 숫자만 입력하세요');		$('#price').focus();		return false; }
+
+			var p_s = parseInt($('#price_sobi').val().replace(/,/g, ''));
+			var p = parseInt($('#price').val().replace(/,/g, ''));
+
+			if( $('#price_sobi').val() ){
+				if( p_s < p ){
+					alert('정상가는 판매가보다 같거나 커야 합니다.');		$('#price_sobi').focus();		return false;
+				}
+			}
+
+			// 사은품 체크시 사은품 내용체크
+			if( $("input[name='addition']").is(":checked") ){
+				if( !FORM_V_CK('addition_pdt', '사은품을 입력하세요') ){ return false; }
+			}// 사은품 체크시 사은품 내용체크
+
+
+			$('#loading').css('height', $(document).height());
+			$('#loading').show();
+
+			var fields = $('#W').serialize();
+
+			$.ajax({
+				url: './add.php',
+				async: false,
+				data: fields,
+				type: 'post',
+				dataType: 'jsonp',
+				jsonp : 'callback',
+				timeout: 5000,
+
+				error: function(){
+					$('#loading').hide();
+					alert('전송오류! 다시시도하세요!1');
+				},
+
+				success: function(obj){
+
+					if( obj.mode == 1 ){
+						alert(obj.msg);
+						location.replace();
+					}else{
+						$('#loading').hide();
+						alert(obj.msg);
+					}
+
+				}
+
+			});
+
+		}//end of CK()
+
+
+		// 해당 판매자의 상품DB에 바코드중복인지 체크
+		function pdt_bcode_over_ck(){
+
+			if( !$('#bcode').val() ){
+				alert('바코드를 입력하세요');
+				$('#bcode').focus();
+				return false;
+			}
+
+			var ret_ck = 0;
+
+			$.ajax({
+				url: "",
+				data: "bcode=" + $("#bcode").val(),
+				type: "post",
+				async : false,
+				dataType: "jsonp",
+				jsonp : "callback",
+				timeout: 5000,
+
+				error: function(){
+					alert('전송오류! 다시시도하세요!2');
+				},
+
+				success: function(obj){
+
+					if( obj.mode == 1 ){
+						$("#bcode_ck").val("1");
+						ret_ck = 1;
+					}else{
+						$("#bcode_ck").val("0");
+						alert(obj.msg);
+						$("#bcode").focus();
+						ret_ck = 0;
+					}
+
+				}
+
+			});
+
+			return ret_ck;
+
+		}//end of pdt_bcode_over_ck()
+
+
+		// 이미지 업로드 방식 선택
+		function upload_type_ck(no){
+
+			// 직접 올리기
+
+			// 2021.6.3 직접올리기에 네이버 이미지 검색 버튼 새로생성
+			// 직접 올기기에 #imgdb_private_select_btn 새로생성 
+			// 각 버튼클릭시 숨기기 혹은 표시하기 기능
+			if( no == 1 ){
+
+				$('#imgdb_global_num').val('0');
+				$('#imgdb_global_select_btn').hide();
+				$('#imgdb_private_select_btn').show();
+				$('#imgdb_global_select_area_tab').removeClass('sel');
+				$('#imgdb_global_select_area').hide();
+				$('#imgdb_private_select_area_tab').addClass('sel');
+				$('#imgdb_private_select_area').show();
+
+			// 이미지 DB 사용
+			}else if( no == 2 ){
+
+				if( $('#imgdb_global_num_bak').val() !=0 ) $('#imgdb_global_num').val($('#imgdb_global_num_bak').val());
+
+				$('#imgdb_global_select_btn').show();
+				$('#imgdb_private_select_btn').hide();
+				$('#imgdb_private_select_area').hide();
+				$('#imgdb_private_select_area2').hide();
+				$('#imgdb_private_select_area_tab').removeClass('sel');
+
+				$('#imgdb_global_select_area_tab').addClass('sel');
+
+				if( $('#imgdb_global_type1').attr('src') || $('#imgdb_global_type2').attr('src') ){
+					$('#imgdb_global_select_area').show();
+				}
+				
+
+			}
+
+		}//end of upload_type_ck()
+
+
+		function checkOnlyOne(element) {
+
+			if( element.checked == false ){
+
+				element.checked = false;
+
+			}else{
+
+				var checkboxes = document.getElementsByName("icon_num");
+
+				checkboxes.forEach((cb) => {
+					cb.checked = false;
+				})
+
+				element.checked = true;
+
+			}
+
+		}//end checkOnlyOne()
+
+	//]]>
+	</script>
+	<!-- CDN 위치 고정이여야 is not a function 오류안뜸 -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+	<!-- 이미지 크롭 -->
+	<link rel="stylesheet" href="/css/crop/imgareaselect-animated.css" type="text/css" media="all" />
+	<link rel="stylesheet" href="/css/crop/imgareaselect-default.css" type="text/css" media="all" />
+	<script src="/js/crop/jquery.imgareaselect.pack.js"></script>
+
+	
+
+
+	<!-- 이미지 업로드 -->
+	<script src="/js/jquery.ui.widget.js" charset="utf-8"></script>
+	<script src="/js/jquery.fileupload.js" charset="utf-8"></script>
+
+	<script type="text/javascript">
+
+
+	<!--
+
+		<?
+		// 상품이미지,정보이미지의 sid생성
+		$pdt_img_sid = $SKP__['num'] ."_pdt_" . SESSION_ID_CREATE__();
+		$pdt_detail_img_sid = $SKP__['num'] ."_pdt_detail_" . SESSION_ID_CREATE__();
+		?>
+
+		// 크롭영역의 실제 크롭 처리
+		function crop_make(myid, img_type, sid, id_w, id_h, x1, y1, w, h){
+
+			if( w == 0 || h == 0 ){
+				alert('영역을 선택하세요');
+				return false;
+			}
+
+			$.ajax({
+				url: "",
+				data: "work_type=2&img_type=" + img_type + "&sid=" + sid + "&id_w=" + id_w + "&id_h=" + id_h + "&x1=" + x1 + "&y1=" + y1 + "&w=" + w + "&h=" + h,
+				type: "post",
+				async : false,
+				dataType: "jsonp",
+				jsonp : "callback",
+				timeout: 5000,
+
+				error: function(){
+					alert('전송오류! 다시시도하세요!');
+				},
+
+				success: function(obj){
+
+					if( obj.mode == 1 ){
+
+						$('#' + myid + '_preview').html(obj.tag1);
+						$('#' + myid + '_edit_preview').html(obj.tag2);
+
+						if( myid == "pdt_img" )				crop_img('1', myid + '_id');
+						else if( myid == "pdt_detail_img" )	crop_img('2', myid + '_id');
+
+					}else{
+						alert(obj.msg);
+					}
+
+				}
+
+			});
+
+		}//end of crop_make()
+
+		// 크롭selecter 생성
+		function crop_img(img_type, img_id){
+
+			if( img_type == 1 )	$('#' + img_id).imgAreaSelect({ aspectRatio: '1:1', handles: true, fadeSpeed: 200, onInit: crop_preview, onSelectChange: crop_preview });
+			else				$('#' + img_id).imgAreaSelect({ handles: true, fadeSpeed: 200, onInit: crop_preview, onSelectChange: crop_preview });
+
+		}//end of crop_img()
+
+
+		// 크롭시 미리보기: img=300사이즈의 미리보기용 이미지
+		function crop_preview(img, selection){
+
+			if( !selection.width || !selection.height )	return;
+
+			// img object에서 상품이미지 또는 정보이미지 구분
+			if( img.id == 'pdt_img_id' ){
+				var edit_preview_div = 'pdt_img_edit_preview';
+				var edit_preview_img = img.id + '_edit_preview_id';
+				var edit_xy = 'pdt_img_';
+			}else{
+				var edit_preview_div = 'pdt_detail_img_edit_preview';
+				var edit_preview_img = img.id + '_edit_preview_id';
+				var edit_xy = 'pdt_detail_img_';
+			}
+
+			var w = $('#' + edit_preview_img).width();
+			var h = $('#' + edit_preview_img).height();
+
+			var scaleX = 200 / selection.width;
+			var scaleY = 200 / selection.height;
+
+			$('#' + edit_preview_div + ' img').css({
+				width: Math.round(scaleX * img.width),
+				height: Math.round(scaleY * img.height),
+				marginLeft: -Math.round(scaleX * selection.x1),
+				marginTop: -Math.round(scaleY * selection.y1)
+			});
+
+			$('#' + edit_xy + 'x1').val(selection.x1);
+			$('#' + edit_xy + 'y1').val(selection.y1);
+			$('#' + edit_xy + 'w').val(selection.width);
+			$('#' + edit_xy + 'h').val(selection.height);
+
+		}//end of crop_preview()
+
+
+		$(function(){ 
+
+			// 파일 업로드 test2
+			$('.pdt_img_class').fileupload({
+
+				url : '',
+				dataType: 'jsonp',
+				replaceFileInput: true,		// 동일한 파일 업로드 가능
+
+				add: function(e, data){
+
+					var uploadFile = data.files[0];
+					var isValid = true;
+					var myid = $(this).attr('id');
+
+
+					if( !(/jpg|png/i).test(uploadFile.name) ){
+						isValid = false;
+					}else if( uploadFile.size > <? echo $IMGDB_UPLOAD_SIZE__; ?> ){
+						alert('파일 용량은 <? echo ($IMGDB_UPLOAD_SIZE__ / 1000); ?>KB를 초과할 수 없습니다.');
+						isValid = false;
+					}
+
+					$('#' + myid + '_preview_text_layer').hide();
+					$('#' + myid + '_preview_layer').show();
+					$('#' + myid + '_preview').html("<div class='loading'>로딩중</div>");
+
+					if( myid == 'pdt_img' ){
+						$('#img_type').val('1');
+						$('#sid').val('<?=$pdt_img_sid;?>');
+					}else if( myid == 'pdt_detail_img' ){
+						$('#img_type').val('2');
+						$('#sid').val('<?=$pdt_detail_img_sid;?>');
+					}
+
+					if( isValid ) {
+						data.submit();
+						$('#loading_text').css('height', $(document).height());
+						$('#loading_text').show();
+					}
+
+				},//end of add()
+
+				done: function(e, data){
+
+					var myid = $(this).attr('id');
+					var mode = data.result.mode;
+					var msg = data.result.msg;
+					console.log(this);
+
+					if( mode == 1 ){
+
+						var tag1 = data.result.tag1;
+						var tag2 = data.result.tag2;
+
+						$('#' + myid + '_preview').html(tag1);
+						console.log(tag1);
+						$('#' + myid + '_edit_preview').html(tag2);
+						$('#' + myid + '_edit_preview_btn').show();
+
+						if( myid == "pdt_img" )					crop_img('1', myid + '_id');
+						else if( myid == "pdt_detail_img" )		crop_img('2', myid + '_id');
+
+					}else{
+						alert(msg);
+					}
+
+					$('#loading_text').hide();
+
+				},//end of done()
+
+				fail: function(e, data){
+					console.log(this);
+
+					alert('서버와 통신 중 문제가 발생했습니다.');
+					$('#loading_text').hide();
+
+				}//end of fail()
+
+			});//end of 파일 업로드
+
+
+		});
+		
+		// 정상가, 도매가 기본값 설정
+		function PRICE_DEFAULT(){
+			
+			if( !$('#price_sobi').val() && NUM_COMM_CK($('#price').val()) ) $('#price_sobi').val($('#price').val());
+			if( !$('#do_price1').val() && NUM_COMM_CK($('#price').val()) ) $('#do_price1').val($('#price').val());
+			if( !$('#do_price2').val() && NUM_COMM_CK($('#price').val()) ) $('#do_price2').val($('#price').val());
+			if( !$('#do_price3').val() && NUM_COMM_CK($('#price').val()) ) $('#do_price3').val($('#price').val());
+			if( !$('#do_price4').val() && NUM_COMM_CK($('#price').val()) ) $('#do_price4').val($('#price').val());
+			if( !$('#do_price5').val() && NUM_COMM_CK($('#price').val()) ) $('#do_price5').val($('#price').val());
+			
+		}// end of PRICE_DEFAULT();
+
+	
+
+
+	
+
+
+	</script>
+
+	<div id='pdtadd' style='width:<?=$_width;?>px'>
+
+		<p class="tit"></p>
+
+		<FORM id='W' name='W' method='post'>
+			<input type='hidden' id='imgdb_global_num' name='imgdb_global_num' value='0'>			
+			<input type='hidden' id='imgdb_global_num_bak' name='imgdb_global_num_bak' value='0'>	
+			<input type='hidden' id='work_type' name='work_type' value='1'>
+			<input type='hidden' id='img_type' name='img_type' value=''>
+			<input type='hidden' id='sid' name='sid' value=''>
+
+		<fieldset>
+
+		<div class="tab upload_type_btn">
+			<ul>
+				<li><a href="javascript:;" id='imgdb_global_select_area_tab' class='global sel' onclick="upload_type_ck('2');"><span>이미지DB 사용</span></a></li>
+				<li><a href="javascript:;" id='imgdb_private_select_area_tab' class='private' onclick="upload_type_ck('1');"><span>직접올리기</span></a></li>
+			</ul>
+		</div>
+
+		<div class="tab_wrap">
+
+			<span id='imgdb_global_select_btn'>
+				<a href="javascript:;" onclick="MOD_POPUP_WIN_OPEN('850', '750', '/', '1');">이미지 검색 <span>(이미지 선택후 상품명, 바코드, 규격등을 다시 한번 확인해주십시오.)</span></a>
+			</span>
+			<span id='imgdb_private_select_btn' style='display:none;'>
+				<a href="javascript:;" onclick="MOD_POPUP_WIN_OPEN('850', '750', '/', '1');">네이버이미지검색 <span>(찾으시는 이미지가 없으시면 네이버 이미지 검색해보세요! )</span></a>
+			</span>
+
+			<table summary="기본정보 표목록입니다.">
+				<caption>상품 단일 등록을 위한 정보를 작성합니다.</caption>
+				<colgroup>
+					<col width='140'>
+					<col width='*'>
+					<col width='120'>
+					<col width='*'>
+				</colgroup>
+				<tbody>
+				<tr>
+					<th>상품명<span>필수</span></th>
+					<td><input type='text' id='name' name='name' maxlength='100' style='ime-mode:active;' class='t_text w200'></td>
+					<th>바코드</th>
+					<td>
+						<input type='text' id='bcode' name='bcode' maxlength='15' style='ime-mode:disabled;' class='t_text'>
+						<input type='hidden' id='bcode_ck' name='bcode_ck' value='0'>
+					</td>
+				</tr>
+				<tr>
+					<th>규격</th>
+					<td colspan='3'><input type='text' id='standard' name='standard' maxlength='30' class='t_text w200'><p> (상품의 단위, 용량, 무게, 갯수등을 입력)</p></td>
+				</tr>
+				<tr>
+					<th>분류선택<span>필수</span></th>
+					<td colspan='3'>
+						<?
+							$cate_ajax_fun = "AJAX_SELECT('/config/cate.php','select_name=cate_sub&select_0_text=---소분류선택---&parent=' + $('#cate').val() + '&cate=&','cate_sub_layer',0);";
+							echo SELECT_DB__($MDB__, "select * from cate where depth=1 order by seq asc", "cate", "cate_name", "cate", "---대분류선택---", '', "onchange=\"$cate_ajax_fun\"", "1");
+						?>
+						<span id=cate_sub_layer><select><option value=''>---소분류선택---</option></select></span>
+					</td>
+				</tr>
+				</tbody>
+			</table>
+
+			<!-- 공통이미지DB 선택시 -->
+			<div id='imgdb_global_select_area' class="imgdbglobal" style='display:none'>
+				<ul>
+					<li>
+						<p><img id='imgdb_global_type1' src='' style='width:auto'></p>
+					</li>
+					<li>
+						<p><img id='imgdb_global_type2' src='' style='width:auto'></p>
+					</li>
+				</ul>
+			</div>
+			<!-- 공통이미지DB 선택시 -->
+
+			
+
+			<!-- 네이버 이미지검색 스크립트 -->
+			<script>
+			jQuery(document).ready(function(){
+			$('#upload').click(function(){ //upload 버튼 클릭시 이벤트
+				var image_url = $('#image_url').val();
+				if(image_url == ''){
+					alert("Please enter image url");
+					return false;
+				}else{
+					//$('#upload').attr("disabled", "disabled");
+					$.ajax({
+						url: './upload.php',
+						async: false,
+
+						type: 'POST',
+						dataType: 'jsonp',
+						jsonp : 'callback',
+						data:{
+							image_url:image_url,
+							sid:'<?=$pdt_img_sid;?>'},
+						success:function(obj)
+						{
+						$('#image_url').val('');
+						$('#upload').val('Upload');
+						console.log(obj.tag1);
+						$('#upload').attr("disabled", false);
+						console.log(this);
+						$(this).attr('id','pdt_img'); //해당 이미지엘리먼트에 ID값 부여
+						var myid = $(this).attr('id');
+						$('#' + myid + '_preview_layer').show();
+						$('#' + myid + '_preview').html(obj.tag1);
+						$('#' + myid + '_edit_preview').html(obj.tag2);
+						$('#' + myid + '_edit_preview_btn').show();
+						
+						if( myid == "pdt_img" )					crop_img('1', myid + '_id');
+						else if( myid == "pdt_detail_img" )		crop_img('2', myid + '_id');
+
+						$('#imgdb_private_select_area').show();
+						$('#imgdb_private_select_area2').hide();
+						}
+						,
+						error:function(request,status,error){
+						console.log("code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
+						}
+					})
+					return false;
+				}
+			})
+		});
+			</script>
+
+			<!-- 네이버 이미지검색 스크립트 end-->
+
+			<!-- 네이버이미지검색 선택시 -->
+			<div id='imgdb_private_select_area2' class='imgdbglobal' style='display:none'>
+				<ul>
+					<li>
+					<div id='test'></div>
+				    <input type="text" name="image_url" id="image_url" class="form-control" />
+					<input type="button" name="upload" id="upload" value="해당 이미지를 선택하시겠습니까?" class="btn btn-info" />
+					</li>
+				</ul>
+			</div>
+			<!-- 네이버이미지검색 선택시 -->
+
+
+
+
+			<!-- 개인이미지DB 선택시 -->
+			<div id='imgdb_private_select_area' class='imgdbglobal' style='display:none'>
+
+				<table class="standards" summary="개인이미지DB입력">
+					<caption>상품 단일 등록을 위한 정보를 작성합니다.</caption>
+					<colgroup>
+					<col width='140'>
+					<col width='*'>
+					</colgroup>
+					<tbody>
+					<tr>
+						<th>
+							상품이미지<span>필수</span>
+							<input type='file' class='pdt_img_class' id='pdt_img' name='file_data' />
+							<input type='hidden' id='pdt_img_sid' name='pdt_img_sid' value='<?=$pdt_img_sid;?>'>
+						</th>
+						<td id='pdt_img_preview_text_layer'><p>JPG,PNG만 가능, 최대 10M까지 가능</p></td>
+						<td id='pdt_img_preview_layer' style='display:none'>
+							<div id='pdt_img_preview' class="imgdbgloballeft"><!--img--></div>
+							<div class="imgdbglobalright">
+								<div id="pdt_img_edit_preview"><!--img--></div>
+
+								<p id="pdt_img_edit_preview_btn" style='display:none'>
+									<a href="javascript:;" onclick="crop_make('pdt_img', '1', '<?=$pdt_img_sid;?>', $('#pdt_img_id').width(), $('#pdt_img_id').height(), $('#pdt_img_x1').val(), $('#pdt_img_y1').val(), $('#pdt_img_w').val(), $('#pdt_img_h').val())" class="crop"><span>선택영역만 적용</span></a>
+									<a href="javascript:;" class="expand" onclick="MOD_POPUP_WIN_OPEN('750', '750', '/config/tmp_img_pdt_org.htm?type=1&sid=<?=$pdt_img_sid;?>', '0');"><span>확대보기</span></a>
+								</p>
+
+								<input type='hidden' id='pdt_img_x1' value='0'>
+								<input type='hidden' id='pdt_img_y1' value='0'>
+								<input type='hidden' id='pdt_img_w' value='0'>
+								<input type='hidden' id='pdt_img_h' value='0'>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<th>
+							상품상세이미지
+							<input type='file' class='pdt_img_class' id='pdt_detail_img' name='file_data' />
+							<input type='hidden' id='pdt_detail_img_sid' name='pdt_detail_img_sid' value='<?=$pdt_detail_img_sid;?>'>
+						</th>
+						<td id='pdt_detail_img_preview_text_layer'><p>JPG,PNG만 가능, 최대 10M까지 가능</p></td>
+						<td id='pdt_detail_img_preview_layer' style='display:none'>
+							<div id='pdt_detail_img_preview' class="imgdbgloballeft"><!--img--></div>
+							<div class="imgdbglobalright">
+								<div id="pdt_detail_img_edit_preview"><!--img--></div>
+
+								<p id="pdt_detail_img_edit_preview_btn" style='display:none'>
+									<a href="javascript:;"  onclick="crop_make('pdt_detail_img', '2', '<?=$pdt_detail_img_sid;?>', $('#pdt_detail_img_id').width(), $('#pdt_detail_img_id').height(), $('#pdt_detail_img_x1').val(), $('#pdt_detail_img_y1').val(), $('#pdt_detail_img_w').val(), $('#pdt_detail_img_h').val())" class="crop"><span>선택영역만 적용</span></a>
+									<a href="javascript:;" class="expand" onclick="MOD_POPUP_WIN_OPEN('750', '750', '/config/tmp_img_pdt_org.htm?type=1&sid=<?=$pdt_detail_img_sid;?>', '0');"><span>확대보기</span></a>
+								</p>
+
+								<input type='hidden' id='pdt_detail_img_x1' value='0'>
+								<input type='hidden' id='pdt_detail_img_y1' value='0'>
+								<input type='hidden' id='pdt_detail_img_w' value='0'>
+								<input type='hidden' id='pdt_detail_img_h' value='0'>
+							</div>
+						</td>
+					</tr>
+					</tbody>
+				</table>
+
+			</div>
+			<!-- /개인이미지DB 선택시 -->
+
+			<div class="imgdbtext">
+				<dl>
+					<dt>
+						<strong>상품상세 내용</strong>
+						<a href="javascript:;" onclick="$('#detail_layer').css('height','auto');">내용입력</a>
+						<span>(원산지등, 기타 상세내용기재)</span>
+					</dt>
+					<dd id='detail_layer' style="height:0px">
+						<textarea id='detail' name='detail' style="width:100%;height:280px;"></textarea>
+					</dd>
+				</dl>
+			</div>
+
+		//상품 정보관련 table (삭제)
+		<div id="button">
+			<span class="center"><input type='button' value='상품등록' onclick='return CK()'></span>
+		</div>
+		</fieldset>
+		</FORM>
+
+	</div>
